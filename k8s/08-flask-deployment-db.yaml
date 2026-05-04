@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+  namespace: flask-app
+  labels:
+    app: flask
+    tier: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: flask
+        tier: backend
+    spec:
+      containers:
+        - name: flask
+          image: flask-k8s-app:2.0  # Nueva versión con integración a PostgreSQL
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          
+          # Variables de entorno para conectar a PostgreSQL
+          env:
+            - name: APP_ENV
+              value: "production"
+            - name: PORT
+              value: "5000"
+            
+            # Host: usa el nombre DNS del Service de PostgreSQL
+            - name: DB_HOST
+              value: "postgres-service"  # Resuelve a la IP del Service
+            - name: DB_PORT
+              value: "5432"
+            
+            # Credenciales desde el Secret (método seguro)
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret  # Nombre del Secret
+                  key: POSTGRES_DB  # Clave dentro del Secret
+            
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"

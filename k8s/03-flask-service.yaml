@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: flask-service
+  namespace: flask-app
+  labels:
+    app: flask
+spec:
+  type: ClusterIP  # Solo accesible dentro del clúster (no expuesto al exterior)
+  selector:
+    app: flask  # Selector que identifica qué Pods reciben tráfico
+    tier: backend
+  ports:
+    - name: http
+      port: 5000  # Puerto del Service (donde otros servicios se conectan)
+      targetPort: 5000  # Puerto del contenedor en el Pod
+      protocol: TCP

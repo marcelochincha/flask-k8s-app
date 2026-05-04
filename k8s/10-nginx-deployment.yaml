@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: flask-app
+  labels:
+    app: nginx
+    tier: frontend
+spec:
+  replicas: 2  # 2 réplicas del proxy para alta disponibilidad
+  selector:
+    matchLabels:
+      app: nginx
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: nginx
+        tier: frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.25-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          
+          # Monta la configuración desde el ConfigMap
+          volumeMounts:
+            - name: nginx-config  # Nombre del volumen definido abajo
+              mountPath: /etc/nginx/nginx.conf  # Ruta completa donde se monta
+              subPath: nginx.conf  # Solo monta este archivo, no todo el directorio
+          
+          # Health checks para Nginx
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+      
+      # Define el volumen que usa el ConfigMap
+      volumes:
+        - name: nginx-config  # Nombre que se usa en volumeMounts
+          configMap:
+            name: nginx-config  # Referencia al ConfigMap creado anteriormente

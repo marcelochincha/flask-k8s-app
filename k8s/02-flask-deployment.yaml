@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+  namespace: flask-app
+  labels:
+    app: flask
+    tier: backend  # Etiqueta que identifica la capa de la aplicación
+spec:
+  replicas: 3  # Número de Pods (réplicas) que queremos ejecutar
+  selector:
+    matchLabels:  # Selector para identificar qué Pods gestiona este Deployment
+      app: flask
+      tier: backend
+  template:  # Plantilla del Pod que se replicará
+    metadata:
+      labels:
+        app: flask
+        tier: backend
+    spec:
+      containers:
+        - name: flask
+          image: flask-k8s-app:1.0
+          imagePullPolicy: IfNotPresent  # Usa imagen local si existe
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: APP_ENV
+              value: "development"
+            - name: PORT
+              value: "5000"
+          livenessProbe:  # Verifica si el contenedor está vivo
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10  # Espera 10s antes de la primera verificación
+            periodSeconds: 5  # Verifica cada 5s
+          readinessProbe:  # Verifica si el contenedor está listo para recibir tráfico
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          resources:  # Límites de recursos para cada contenedor
+            requests:  # Recursos mínimos garantizados
+              memory: "128Mi"
+              cpu: "100m"
+            limits:  # Recursos máximos permitidos
+              memory: "256Mi"
+              cpu: "200m"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: flask-app
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP  # Solo accesible internamente (no expuesto al exterior)
+  selector:
+    app: postgres  # Selecciona Pods con la etiqueta app=postgres
+    tier: database
+  ports:
+    - name: postgres
+      port: 5432  # Puerto del Service
+      targetPort: 5432  # Puerto del contenedor PostgreSQL
+      protocol: TCP
